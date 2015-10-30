@@ -18,9 +18,9 @@ long test_syscall_ss(){
 int main(int argc, char *argv[])
 {
     long int a = test_syscall(1);
-    long int b = test_syscall_s(10);
+    long int b = test_syscall_s(20);
     long int c = test_syscall_ss();
-    long int d = test_syscall_s(5);
+    long int d = test_syscall_s(20);
     printf("System call returned %ld\n", a);
     printf("System call returned %ld\n", b);
     printf("System call returned %ld\n", d);
