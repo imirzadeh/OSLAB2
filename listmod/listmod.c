@@ -14,7 +14,7 @@
 #define TRUE 1
 
 
-// NOTE --> this is constant is defined in System.map in /boot dir :))
+// NOTE --> this is constant is defined in SystemXXXX.map in /boot dir :))
 unsigned long *syscall_table = 0xc0585110; 
 
 //###############################################
@@ -36,7 +36,7 @@ void add_process(pid_t id,int prio,long child_number){
 	p->id = id; 
 	p->priority = prio;
 	p->child_no = child_number;
-	list_add_tail(&p->list,proc_list);
+	list_add(&p->list,proc_list);
 }
 
 void remove_process(pid_t proc_id){
@@ -84,7 +84,7 @@ asmlinkage long new_sys_init_data_list(pid_t p){
 	int process_exist = 1;
 
 	if(!list_empty(proc_list)){
-		printk("List is not empty!\n");
+		printk("List is not empty!\nclearning....\n");
 		clear_list();
 	}
 	printk("now looking for pid:%d\n",p);
