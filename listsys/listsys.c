@@ -17,6 +17,7 @@ struct my_proc dummy;
 struct list_head* proc_list = &(dummy.list);
 
 void add_process(pid_t id,int prio){
+	//printk("SYS | adding process with pid = %d to list\n",id);
 	struct my_proc *p;
 	p = kmalloc(sizeof(*p),GFP_KERNEL);
 	p->id = id; 
@@ -25,6 +26,7 @@ void add_process(pid_t id,int prio){
 }
 
 void remove_process(pid_t proc_id){
+	//printk("SYS | removing process with pid = %d to list\n",proc_id);
 	struct my_proc *p;
 	list_for_each_entry(p,proc_list,list){
 		if(p->id = proc_id){
@@ -43,19 +45,9 @@ void dfs(struct task_struct *current_task){
 	}
 }
 
-/*void clear_list(){
-	printk("start clearing\n");
-	struct my_proc *p;
-	list_for_each_entry(p,proc_list,list){
-		if( (p->list).next == proc_list)
-			return;
-		list_del(&(p->list));	
-		kfree(p);
-	}
-	printk("end clearing\n");
-} */
+
 void clear_list(){
-	printk("start clear_list()\n");
+	printk("SYS | start clear_list()\n");
 	struct list_head* it;
 	list_for_each(it,proc_list){
 		struct my_proc* cur;
@@ -65,11 +57,11 @@ void clear_list(){
 		it = prev;
 		kfree(cur);
 	}
-	printk("end  clear_list()\n");
+	printk("SYS | end  clear_list()\n");
 }
 
 asmlinkage long sys_init_data_list(pid_t p){
-	printk("Helllllo\n");
+	printk("SYS | initing list\n");
 	if(init_flag == FALSE ){
 		INIT_LIST_HEAD(proc_list);
 		init_flag = TRUE;
@@ -81,7 +73,7 @@ asmlinkage long sys_init_data_list(pid_t p){
 		printk("List is not empty!\n");
 		clear_list();
 	}
-	printk("now looking for pid:%d\n",p);
+	printk("SYS | now looking for pid:%d\n",p);
 	for_each_process(task){		
 		if(task->pid == p){ 
 			process_exist = 0;
@@ -94,7 +86,7 @@ asmlinkage long sys_init_data_list(pid_t p){
 } 
 
 asmlinkage long sys_show_data_list(unsigned limit){
-	printk("showed\n");
+	printk("SYS | showing list\n");
 	if(init_flag == FALSE  || list_empty(proc_list))
 		sys_init_data_list(1);
 	
@@ -110,6 +102,7 @@ asmlinkage long sys_show_data_list(unsigned limit){
 	return -1;
 }
 asmlinkage long sys_sort_data_list(void) {
+	printk("SYS | started sorting list\n");
 	if(init_flag == FALSE  || list_empty(proc_list))
 		sys_init_data_list(1);
 	struct list_head* head;
@@ -132,6 +125,6 @@ asmlinkage long sys_sort_data_list(void) {
           		  head = head->prev;
        		}
 	}
-	printk("sorted!\n");
+	printk("SYS | done sorting !\n");
 	return 0;
 }
