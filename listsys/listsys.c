@@ -3,50 +3,65 @@
 #include <linux/module.h>
 #include <linux/proc_fs.h>
 #include <linux/sched.h>
+//#include "shared_struct.h"
+
 #define FALSE 0
 #define TRUE 1
+
 
 struct my_proc{
 	pid_t id;
 	long priority;
+	long child_no;
 	struct list_head list;
 };
 
-int init_flag = FALSE;
-struct my_proc dummy;
-struct list_head* proc_list = &(dummy.list);
 
-void add_process(pid_t id,int prio){
+int init_flag = FALSE;
+EXPORT_SYMBOL(init_flag);
+struct my_proc dummy;
+EXPORT_SYMBOL(dummy);
+struct list_head* proc_list = &(dummy.list);
+EXPORT_SYMBOL(proc_list);
+
+long add_process(pid_t id,int prio,long child_number){
 	//printk("SYS | adding process with pid = %d to list\n",id);
 	struct my_proc *p;
 	p = kmalloc(sizeof(*p),GFP_KERNEL);
 	p->id = id; 
 	p->priority = prio;
-	list_add_tail(&p->list,proc_list);
+	p->child_no = child_number;
+	list_add(&p->list,proc_list);
+	return 0;
 }
+EXPORT_SYMBOL(add_process);
 
-void remove_process(pid_t proc_id){
+long remove_process(pid_t proc_id){
 	//printk("SYS | removing process with pid = %d to list\n",proc_id);
 	struct my_proc *p;
 	list_for_each_entry(p,proc_list,list){
 		if(p->id = proc_id){
 			list_del(&p->list);
 			kfree(p);
-			return;
+			return 0;
 		}
 	}
+	return 1;
 }
+EXPORT_SYMBOL(remove_process);
 
-void dfs(struct task_struct *current_task){
-	add_process(current_task->pid,current_task->prio);
+long dfs(struct task_struct *current_task){
+	long child_no = 1;
 	struct task_struct *child;
 	list_for_each_entry(child,&(current_task->children),sibling){
-		dfs(child);
+		child_no += dfs(child);
 	}
+	add_process(current_task->pid,current_task->prio,child_no);
+	return child_no;
 }
+EXPORT_SYMBOL(dfs);
 
-
-void clear_list(){
+long clear_list(){
 	printk("SYS | start clear_list()\n");
 	struct list_head* it;
 	list_for_each(it,proc_list){
@@ -58,7 +73,9 @@ void clear_list(){
 		kfree(cur);
 	}
 	printk("SYS | end  clear_list()\n");
+	return 0;
 }
+EXPORT_SYMBOL(clear_list);
 
 asmlinkage long sys_init_data_list(pid_t p){
 	printk("SYS | initing list\n");
@@ -83,7 +100,8 @@ asmlinkage long sys_init_data_list(pid_t p){
 		
 	}
 	return process_exist;
-} 
+}
+EXPORT_SYMBOL(sys_init_data_list);
 
 asmlinkage long sys_show_data_list(unsigned limit){
 	printk("SYS | showing list\n");
@@ -101,6 +119,8 @@ asmlinkage long sys_show_data_list(unsigned limit){
 	}
 	return -1;
 }
+EXPORT_SYMBOL(sys_show_data_list);
+
 asmlinkage long sys_sort_data_list(void) {
 	printk("SYS | started sorting list\n");
 	if(init_flag == FALSE  || list_empty(proc_list))
@@ -128,3 +148,4 @@ asmlinkage long sys_sort_data_list(void) {
 	printk("SYS | done sorting !\n");
 	return 0;
 }
+EXPORT_SYMBOL(sys_sort_data_list);

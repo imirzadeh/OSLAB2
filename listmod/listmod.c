@@ -10,14 +10,11 @@
 #include <linux/sched.h>
 #include <linux/kallsyms.h>
 #include <linux/list.h>
+#include <linux/proc_fs.h>
+
 #define FALSE 0
 #define TRUE 1
 
-
-// NOTE --> this is constant is defined in SystemXXXX.map in /boot dir :))
-unsigned long *syscall_table = 0xc0585110; 
-
-//###############################################
 
 struct my_proc{
 	pid_t id;
@@ -26,83 +23,31 @@ struct my_proc{
 	struct list_head list;
 };
 
-int init_flag = FALSE;
-struct my_proc dummy;
-struct list_head* proc_list = &(dummy.list);
 
-void add_process(pid_t id,int prio,long child_number){
-	struct my_proc *p;
-	p = kmalloc(sizeof(*p),GFP_KERNEL);
-	p->id = id; 
-	p->priority = prio;
-	p->child_no = child_number;
-	list_add(&p->list,proc_list);
-}
+// NOTE --> this is constant is defined in SystemXXXX.map in /boot dir :))
+unsigned long *syscall_table = 0xc0585110; 
 
-void remove_process(pid_t proc_id){
-	struct my_proc *p;
-	list_for_each_entry(p,proc_list,list){
-		if(p->id = proc_id){
-			list_del(&p->list);
-			kfree(p);
-			return;
-		}
-	}
-}
+//###############################################
 
-long dfs(struct task_struct *current_task){
-	long child_no = 1;
-	struct task_struct *child;
-	list_for_each_entry(child,&(current_task->children),sibling){
-		child_no += dfs(child);
-	}
-	add_process(current_task->pid,current_task->prio,child_no);
-	return child_no;
-}
+extern int init_flag;
+extern struct my_proc dummy;
+extern struct list_head* proc_list = &(dummy.list);
 
-void clear_list(){
-	printk("MODULE | start clear_list()\n");
-	struct list_head* it;
-	list_for_each(it,proc_list){
-		struct my_proc* cur;
-		cur = list_entry(it,struct my_proc, list);
-		struct list_head* prev = it->prev;
-		list_del(it);
-		it = prev;
-		kfree(cur);
-	}
-	printk("MODULE | end  clear_list()\n");
-}
+extern void add_process(pid_t id,int prio,long child_number);
 
-asmlinkage long new_sys_init_data_list(pid_t p){
-	printk("MODULE | initing list\n");
-	if(init_flag == FALSE ){
-		INIT_LIST_HEAD(proc_list);
-		init_flag = TRUE;
-	}
-	struct task_struct *task;
-	int process_exist = 1;
+extern void remove_process(pid_t proc_id);
 
-	if(!list_empty(proc_list)){
-		printk("MODULE | List is not empty!\nclearning....\n");
-		clear_list();
-	}
-	printk("MODULE | now looking for pid:%d\n",p);
-	for_each_process(task){		
-		if(task->pid == p){ 
-			process_exist = 0;
-			dfs(task);
-			break;
-		}	
-		
-	}
-	return process_exist;
-} 
+extern long dfs(struct task_struct *current_task);
+
+extern void clear_list();
+
+extern asmlinkage long sys_init_data_list(pid_t p);
+
 
 asmlinkage long new_sys_show_data_list(unsigned limit){
 	printk("MODULE | changed_show() started \n");
 	if(init_flag == FALSE  || list_empty(proc_list))
-		new_sys_init_data_list(1);
+		sys_init_data_list(1);
 	
 	struct my_proc *p;
 	list_for_each_entry(p,proc_list,list){
@@ -119,7 +64,7 @@ asmlinkage long new_sys_show_data_list(unsigned limit){
 asmlinkage long new_sys_sort_data_list(void) {
 	printk(KERN_ALERT "\nMODULE | changed_sort() started \n");
 	if(init_flag == FALSE  || list_empty(proc_list))
-		new_sys_init_data_list(1);
+		sys_init_data_list(1);
 	struct list_head* head;
 	struct list_head* max;
 	struct list_head* iterator;
