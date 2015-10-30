@@ -3,18 +3,7 @@
 #include <linux/module.h>
 #include <linux/proc_fs.h>
 #include <linux/sched.h>
-//#include "shared_struct.h"
-
-#define FALSE 0
-#define TRUE 1
-
-
-struct my_proc{
-	pid_t id;
-	long priority;
-	long child_no;
-	struct list_head list;
-};
+#include <linux/iman.h>
 
 
 int init_flag = FALSE;

@@ -11,18 +11,7 @@
 #include <linux/kallsyms.h>
 #include <linux/list.h>
 #include <linux/proc_fs.h>
-
-#define FALSE 0
-#define TRUE 1
-
-
-struct my_proc{
-	pid_t id;
-	long priority;
-	long child_no;
-	struct list_head list;
-};
-
+#include <linux/iman.h>
 
 // NOTE --> this is constant is defined in SystemXXXX.map in /boot dir :))
 unsigned long *syscall_table = 0xc0585110; 
