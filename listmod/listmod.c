@@ -61,7 +61,7 @@ long dfs(struct task_struct *current_task){
 }
 
 void clear_list(){
-	printk("start clear_list()\n");
+	printk("MODULE | start clear_list()\n");
 	struct list_head* it;
 	list_for_each(it,proc_list){
 		struct my_proc* cur;
@@ -71,11 +71,11 @@ void clear_list(){
 		it = prev;
 		kfree(cur);
 	}
-	printk("end  clear_list()\n");
+	printk("MODULE | end  clear_list()\n");
 }
 
 asmlinkage long new_sys_init_data_list(pid_t p){
-	printk("initing list, in MODULE\n");
+	printk("MODULE | initing list\n");
 	if(init_flag == FALSE ){
 		INIT_LIST_HEAD(proc_list);
 		init_flag = TRUE;
@@ -84,10 +84,10 @@ asmlinkage long new_sys_init_data_list(pid_t p){
 	int process_exist = 1;
 
 	if(!list_empty(proc_list)){
-		printk("List is not empty!\nclearning....\n");
+		printk("MODULE | List is not empty!\nclearning....\n");
 		clear_list();
 	}
-	printk("now looking for pid:%d\n",p);
+	printk("MODULE | now looking for pid:%d\n",p);
 	for_each_process(task){		
 		if(task->pid == p){ 
 			process_exist = 0;
@@ -100,7 +100,7 @@ asmlinkage long new_sys_init_data_list(pid_t p){
 } 
 
 asmlinkage long new_sys_show_data_list(unsigned limit){
-	printk("showed\n");
+	printk("MODULE | changed_show() started \n");
 	if(init_flag == FALSE  || list_empty(proc_list))
 		new_sys_init_data_list(1);
 	
@@ -113,32 +113,34 @@ asmlinkage long new_sys_show_data_list(unsigned limit){
 		if(!limit)
 		   return 0;
 	}
-	return -1;
+	printk("MODULE | changed_show exited\n");
+	return 1;
 }
 asmlinkage long new_sys_sort_data_list(void) {
+	printk(KERN_ALERT "\nMODULE | changed_sort() started \n");
 	if(init_flag == FALSE  || list_empty(proc_list))
 		new_sys_init_data_list(1);
 	struct list_head* head;
-	struct list_head* min;
+	struct list_head* max;
 	struct list_head* iterator;
 	struct my_proc* current_my_p_list;
-	struct my_proc* current_min;
+	struct my_proc* current_max;
     	list_for_each(head, proc_list){
-		min=head;
-		current_min = list_entry(head, struct my_proc, list);
+		max=head;
+		current_max = list_entry(head, struct my_proc, list);
 		for(iterator=(head->next); iterator != (proc_list); iterator= (iterator->next) ){
 			current_my_p_list = list_entry(iterator, struct my_proc, list);
-			if((current_my_p_list->child_no) > (current_min->child_no)){
-				min = iterator;
-				current_min = current_my_p_list;
+			if((current_my_p_list->child_no) > (current_max->child_no)){
+				max = iterator;
+				current_max = current_my_p_list;
 			}
 		}
-		if(min != head){
-        		  list_move_tail(min, head);
+		if(max != head){
+        		  list_move_tail(max, head);
           		  head = head->prev;
        		}
 	}
-	printk("MODULE | SORTED !\n");
+	printk("MODULE | done sorting!\n");
 	return 0;
 }
 
@@ -147,18 +149,18 @@ asmlinkage int (*original_sort)();
 asmlinkage int (*original_show)();
 asmlinkage int new_sort() {
  
-    printk(KERN_ALERT "SORT CHANGED IN MODULE");
+    printk(KERN_ALERT "\nMODULE | changed_sort() is going to be called\n");
     return new_sys_sort_data_list();
 }
 asmlinkage int new_show(int limit){
-    printk(KERN_ALERT "SORT CHANGED IN MODULE");
+    printk(KERN_ALERT "\nMODULE | changed_show() method\n");
     return new_sys_show_data_list(limit);
 }
 
 
 static int init(void) {
  
-    printk(KERN_ALERT "\nMODULE INIT\n");
+    printk(KERN_ALERT "\nMODULE | init() called!\n");
  
     write_cr0 (read_cr0 () & (~ 0x10000));
  
@@ -167,19 +169,20 @@ static int init(void) {
     syscall_table[__NR_sort_data_list] = new_sort;  
     syscall_table[__NR_show_data_list] = new_show;
     write_cr0 (read_cr0 () | 0x10000);
- 
+    printk(KERN_ALERT "\nMODULE | Changed sys call table!\n");
     return 0;
 }
  
 static void exit(void) {
- 
+    printk(KERN_ALERT "\nMODULE | exit() called.\n");
+    printk(KERN_ALERT "\nMODULE | Module is going to be removed.\n");
     write_cr0 (read_cr0 () & (~ 0x10000));
  
     syscall_table[__NR_sort_data_list] = original_sort;
     syscall_table[__NR_show_data_list] = original_show;
     write_cr0 (read_cr0 () | 0x10000);
  
-    printk(KERN_ALERT "MODULE EXIT\n");
+    printk(KERN_ALERT "\nMODULE | cleaned successfully!! \n");
  
     return;
 }
